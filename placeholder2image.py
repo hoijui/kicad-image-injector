@@ -1,123 +1,29 @@
-
-# SPDX-FileCopyrightText: 2021 Robin Vobruba <hoijui.quaero@gmail.com>
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
-import pcbnew
-import os
-import re
-import shutil
-import subprocess
-import click
-
-from PIL import Image
-
-# Additional import for QRCode
-# see https://github.com/kazuhikoarase/qrcode-generator/blob/master/python/qrcode.py
-#import kicad_qrcode as qrcode  # TODO: local qrcode package is prefered, so we renamed it
-import qrcode
-
-# TODO Document!!
 '''
 How to generate a Sample QR-Code:
 $ qrencode --structured --symversion 1 --size 1 --margin 1 --output qrx.png "My Data"
 $ # or the same in short:
 $ qrencode -S -v 1 -s 1 -m 1 -o qrx.png "My Data"
 '''
+# TODO Document!!
+
+# SPDX-FileCopyrightText: 2021 Robin Vobruba <hoijui.quaero@gmail.com>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+import os
+import re
+
+import click
+import pcbnew
+
+from pixels_source import PixelsSource
+from image_pixels_source import ImagePixelsSource
+from qr_code_pixels_source import QrCodePixelsSource
 
 # MIN_PIXEL_WIDTH = 0.5 * mm # TODO
 MIN_PIXEL_WIDTH = 0.5 * 100000 # TODO Is this the correct multiplier
 MIN_PIXEL_HEIGHT = MIN_PIXEL_WIDTH
-
-class PixelsSource:
-    def getData(self):
-        '''
-        Returns an array containing the pixels to draw.
-        It starts with the first pixel on the left of the top-most line,
-        continues with the second pixel on the same line,
-        until the end of the line, and then continues with the first pixel
-        on the left of the second line from the top.
-        each pixel may only have two values:
-        * "off" -> 0
-        * "on"  -> 1 or 255
-        '''
-        return []
-
-    def getSize(self):
-        return (0, 0)
-
-    def debugAsAsciiToStdout(self) -> None:
-        width = self.getSize()[0]
-        #height = self.getSize()[1]
-        lpi = 0
-        li = 0
-        for pixel in self.getData():
-            if pixel == 0:
-                pc = ' '
-            else:
-                pc = '1'
-            print(pc, end = '')
-            lpi = lpi + 1
-            lpi = lpi % width
-            if lpi == 0:
-                li = li + 1
-                print()
-
-def load_as_binary_image(image_path):
-    try:
-        with Image.open(image_path) as img:
-            if img.mode != "1":
-                img = img.convert("L")
-                img = img.convert("1")
-            return img
-    except OSError:
-        pass
-
-class ImagePixelsSource(PixelsSource):
-    def __init__(self, image_path):
-        self.image = load_as_binary_image(image_path)
-
-    def getSize(self):
-        return self.image.size
-
-    def getData(self):
-        return self.image.getdata()
-
-class QrCodePixelsSource(PixelsSource):
-    def __init__(self, content, border=1):
-        self.border = border
-        # Build QR-Code
-        self.qr = qrcode.QRCode()
-        #self.qr.setTypeNumber(4)
-        # ErrorCorrectLevel: L = 7%, M = 15% Q = 25% H = 30%
-        #self.qr.setErrorCorrectLevel(qrcode.ErrorCorrectLevel.M)
-        self.qr.setErrorCorrectLevel(qrcode.ErrorCorrectLevel.L)
-        self.qr.addData(str(content))
-        self.qr.make()
-        self.len = self.qr.modules.__len__() + (self.border * 2)
-
-    def getSize(self):
-        return (self.len, self.len)
-
-    def getData(self):
-        if self.border >= 0:
-            # Adding border: Create a new array larger than the self.qr.modules
-            arrayToDraw = [ [ 0 for a in range(self.len) ] for b in range(self.len) ]
-            linePosition = self.border
-            for i in self.qr.modules:
-                columnPosition = self.border
-                for j in i:
-                    arrayToDraw[linePosition][columnPosition] = j
-                    columnPosition += 1
-                linePosition += 1
-        else:
-            # No border: using array as is
-            arrayToDraw = self.qr.modules
-        data = []
-        # convert 2D to 1D array
-        for line in arrayToDraw:
-            data.extend(line)
-        return list(data)
+R_KICAD_PCB_EXT = re.compile(r"\.kicad_pcb$")
 
 def _minus(vec1, vec2) -> (int, int):
     return (vec1[0] - vec2[0], vec1[1] - vec2[1])
@@ -135,6 +41,11 @@ def _modulo(vec1, vec2) -> (int, int):
     return (vec1[0] % vec2[0], vec1[1] % vec2[1])
 
 class Replacement:
+    '''
+    A single tempalte replacement in a KiCad PCB file.
+    This keeps track of what to replace,
+    and of *with* what to replace.
+    '''
     def __init__(self, pcb, placeholderDrawing, topLeft: int, bottomRight: int, pixelsSource: PixelsSource, stretch: bool = False, negative: bool = False):
         self.pcb = pcb
         self.placeholderDrawing = placeholderDrawing
@@ -161,7 +72,7 @@ class Replacement:
         if pixelSize[1] < MIN_PIXEL_HEIGHT:
             raise RuntimeError("Replacement image is too large (height) for the template area")
         return pixelSize
-    
+
     def _calcFirstPixelPos(self) -> (int, int):
         border = _minus(self.sizeSpace, _mult(self.sizeRepl, self.sizePixel))
         border = _div(border, (2, 2))
@@ -225,16 +136,14 @@ class Replacement:
         module.SetLayer(pcbnew.F_SilkS) # HACK Needs to be set dynamically/fro a variable
 
         pos = self.firstPixelPos
-        pi = 0
-        xi = 0
-        yi = 0
-        for px in self.pixelsSource.getData():
-            if (px != 0 and not self.negative) or (px == 0 and self.negative):
-                self._drawPixel(module, pi, pos)
-            pi = pi + 1
-            xi = (xi + 1) % self.sizeRepl[0]
-            if xi == 0:
-                yi = yi + 1
+        pixel_i = 0
+        x_i = 0
+        for pixel in self.pixelsSource.getData():
+            if (pixel != 0 and not self.negative) or (pixel == 0 and self.negative):
+                self._drawPixel(module, pixel_i, pos)
+            pixel_i = pixel_i + 1
+            x_i = (x_i + 1) % self.sizeRepl[0]
+            if x_i == 0:
                 posAdjust = (-(self.sizePixel[0] * (self.sizeRepl[0] - 1)), self.sizePixel[1])
             else:
                 posAdjust = (self.sizePixel[0], 0)
@@ -271,27 +180,27 @@ class Replacement:
         module.Value().SetLayer(textLayer)
 
 def extractCorners(obj, polySet):
-    xs = set()
-    ys = set()
-    for pi in range(0, 4):
-        point = polySet.CVertex(pi)
-        xs.add(point.x)
-        ys.add(point.y)
+    x_s = set()
+    y_s = set()
+    for point_i in range(0, 4):
+        point = polySet.CVertex(point_i)
+        x_s.add(point.x)
+        y_s.add(point.y)
     # Check if it is an axis-aligned rectangle
-    if len(xs) != 2 or len(ys) != 2:
+    if len(x_s) != 2 or len(y_s) != 2:
         raise RuntimeWarning("Not an axis-ligned rectangle: %s" % obj)
-    topLeft = (min(xs), min(ys))
-    bottomRight = (max(xs), max(ys))
+    topLeft = (min(x_s), min(y_s))
+    bottomRight = (max(x_s), max(y_s))
     return (topLeft, bottomRight)
 
 def replace_all(pcb, images_root):
     replacements = []
 
     for zone in pcb.Zones():
-        ps = zone.Outline()
-        if ps.OutlineCount() == 1 and ps.VertexCount() == 4:
+        pixels = zone.Outline()
+        if pixels.OutlineCount() == 1 and pixels.VertexCount() == 4:
             try:
-                (topLeft, bottomRight) = extractCorners(zone, ps)
+                (topLeft, bottomRight) = extractCorners(zone, pixels)
             except RuntimeWarning as re:
                 print("NOTE: %s" % re)
             pixelsSource = ImagePixelsSource("qrx.png") # HACK
@@ -300,9 +209,9 @@ def replace_all(pcb, images_root):
 
     for drawing in pcb.GetDrawings():
         if drawing.GetClass() == "DRAWSEGMENT" and drawing.GetShape() == pcbnew.S_POLYGON and drawing.GetPointCount() == 4 and drawing.GetPolyShape().OutlineCount() == 1 and drawing.GetPolyShape().HoleCount(0) == 0:
-            ps = drawing.GetPolyShape()
+            pixels = drawing.GetPolyShape()
             try:
-                (topLeft, bottomRight) = extractCorners(drawing, ps)
+                (topLeft, bottomRight) = extractCorners(drawing, pixels)
             except RuntimeWarning as re:
                 print("NOTE: %s" % re)
             pixelsSource = ImagePixelsSource("qrx.png") # HACK
@@ -328,12 +237,11 @@ def replace_all_cli(kicad_pcb_in_file, kicad_pcb_out_file=None, images_root=None
     KICAD_PCB_IN_FILE - The path to the `*.kicad_pcb` input file to replace QR-Code templates in
     KICAD_PCB_OUT_FILE - The path to the `*.kicad_pcb` output file
     """
-    R_KICAD_PCB_EXT = re.compile("\.kicad_pcb$")
     if kicad_pcb_out_file is None:
         kicad_pcb_out_file = R_KICAD_PCB_EXT.sub("-REPLACED.kicad_pcb", kicad_pcb_in_file)
     if images_root is None:
         images_root = os.curdir
-    
+
     if kicad_pcb_in_file == kicad_pcb_out_file:
         raise RuntimeError("KiCad PCB input and output file names can not be the same!")
 
@@ -345,13 +253,13 @@ def replace_all_cli(kicad_pcb_in_file, kicad_pcb_out_file=None, images_root=None
 
 def testing():
     image_path = "qrx.png"
-    ps = ImagePixelsSource(image_path)
-    ps.debugAsAsciiToStdout()
+    pixels = ImagePixelsSource(image_path)
+    pixels.debug_to_stdout()
 
     print()
 
-    ps = QrCodePixelsSource("My Data", 1)
-    ps.debugAsAsciiToStdout()
+    pixels = QrCodePixelsSource("My Data", 1)
+    pixels.debug_to_stdout()
 
 if __name__ == "__main__":
     # Run as a CLI script
