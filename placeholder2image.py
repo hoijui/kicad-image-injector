@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-#  last change: 2017, Jan 4.
-
 import pcbnew
 import os
 import re
@@ -247,14 +245,13 @@ class Replacement:
         self.pcb.Add(module)
 
     def _drawCaption(self):
-
         # used many times...
         # half_number_of_elements = arrayToDraw.__len__() / 2
         width = self.pixelsSource.getSize()[0]
         halfWidth = width / 2
 
-        #int((5 + half_number_of_elements) * self.pxWidth))
-        textPosition = int((self.textHeight) + ((1 + halfWidth) * self.pxWidth))
+        #int((5 + half_number_of_elements) * self.sizePixel[0]))
+        textPosition = int((self.textHeight) + ((1 + halfWidth) * self.sizePixel[0]))
         module = self.placeholderDrawing.GetParent()
 
         module.Value().SetTextHeight(self.textHeight)
@@ -360,145 +357,3 @@ if __name__ == "__main__":
     # Run as a CLI script
     testing()
     replace_all_cli()
-    exit(1)
-
-
-
-
-import FootprintWizardBase
-
-class QRCodeWizard(FootprintWizardBase.FootprintWizard):
-    GetName = lambda self: '2D Barcode QRCode'
-    GetDescription = lambda self: 'QR Code barcode generator'
-    GetReferencePrefix = lambda self: 'QR***'
-    GetValue = lambda self: self.module.Value().GetText()
-
-    def GenerateParameterList(self):
-        self.AddParam("Barcode", "Pixel Width", self.uMM, 0.5, min_value=0.4)
-        self.AddParam("Barcode", "Border", self.uInteger, 0)
-        self.AddParam("Barcode", "Contents", self.uString, 'Example')
-        self.AddParam("Barcode", "Negative", self.uBool, False)
-        self.AddParam("Barcode", "Use SilkS layer", self.uBool, True)
-        self.AddParam("Barcode", "Use Cu layer", self.uBool, False)
-        self.AddParam("Barcode", "Flip to back", self.uBool, False)
-        self.AddParam("Caption", "Enabled", self.uBool, True)
-        self.AddParam("Caption", "Height", self.uMM, 1.2)
-        self.AddParam("Caption", "Width", self.uMM, 1.2)
-        self.AddParam("Caption", "Thickness", self.uMM, 0.12)
-
-    def CheckParameters(self):
-        self.barcode = str(self.parameters['Barcode']['Contents'])
-        self.pxWidth = self.parameters['Barcode']['Pixel Width']
-        self.pxHeight = self.parameters['Barcode']['Pixel Height']
-        self.negative = self.parameters['Barcode']['Negative']
-        self.useSilkS = self.parameters['Barcode']['Use SilkS layer']
-        self.useCu = self.parameters['Barcode']['Use Cu layer']
-        self.onBack = self.parameters['Barcode']['Flip to back']
-        self.border = int(self.parameters['Barcode']['Border'])
-        self.textHeight = int(self.parameters['Caption']['Height'])
-        self.textThickness = int(self.parameters['Caption']['Thickness'])
-        self.textWidth = int(self.parameters['Caption']['Width'])
-        self.pixelsSource = ImagePixelsSource("qrx.png") # HACK
-        self.module.Value().SetText(str(self.barcode))
-
-    # def drawSquareArea(self, layer, size, xPosition, yPosition):
-    #     # creates a EDGE_MODULE of polygon type. The polygon is a square
-    #     polygon = pcbnew.EDGE_MODULE(self.module)
-    #     polygon.SetShape(pcbnew.S_POLYGON)
-    #     polygon.SetWidth( 0 )
-    #     polygon.SetLayer(layer)
-    #     halfsize = size/2
-    #     polygon.GetPolyShape().NewOutline()
-    #     pos = pcbnew.wxPoint(xPosition, yPosition)
-    #     polygon.GetPolyPoints().Append( pcbnew.wxPoint( halfsize, halfsize  ) + pos )
-    #     polygon.GetPolyPoints().Append( pcbnew.wxPoint( halfsize, -halfsize ) + pos )
-    #     polygon.GetPolyPoints().Append( pcbnew.wxPoint( -halfsize, -halfsize ) + pos )
-    #     polygon.GetPolyPoints().Append( pcbnew.wxPoint( -halfsize, halfsize ) + pos )
-    #     #polygon.GetPolyShape().Append( halfsize+xPosition, halfsize+yPosition )
-    #     #polygon.GetPolyShape().Append( halfsize+xPosition, -halfsize+yPosition )
-    #     #polygon.GetPolyShape().Append( -halfsize+xPosition, -halfsize+yPosition )
-    #     #polygon.GetPolyShape().Append( -halfsize+xPosition, halfsize+yPosition )
-    #     return polygon
-
-    # def _drawPixel(self, xPosition, yPosition):
-    #     # build a rectangular pad as a dot on copper layer,
-    #     # and a polygon (a square) on silkscreen
-    #     if self.useCu:
-    #         pad = pcbnew.D_PAD(self.module)
-    #         pad.SetSize(pcbnew.wxSize(self.pxWidth, self.pxHeight))
-    #         pad.SetPosition(pcbnew.wxPoint(xPosition, yPosition))
-    #         pad.SetShape(pcbnew.PAD_SHAPE_RECT)
-    #         pad.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
-    #         pad.SetName("")
-    #         layerset = pcbnew.LSET()
-    #         if self.onBack:
-    #             layerset.AddLayer(pcbnew.B_Cu)
-    #             layerset.AddLayer(pcbnew.B_Mask)
-    #         else:
-    #             layerset.AddLayer(pcbnew.F_Cu)
-    #             layerset.AddLayer(pcbnew.F_Mask)
-    #             pad.SetLayerSet( layerset )
-    #         self.module.Add(pad)
-    #     if self.useSilkS:
-    #         if self.onBack:
-    #             layer = pcbnew.B_SilkS
-    #         else:
-    #             layer = pcbnew.F_SilkS
-    #     polygon = self.drawSquareArea(layer, self.pxWidth, xPosition, yPosition)
-    #     self.module.Add(polygon)
-
-    # def BuildThisFootprint(self):
-    #     arrayToDraw = self.GetArrayToDraw()
-
-    #     # used many times...
-    #     # half_number_of_elements = arrayToDraw.__len__() / 2
-    #     width = self.pixelsSource.getSize()[0]
-    #     halfWidth = width / 2
-
-    #     # Center position of image
-    #     # yPosition = - int(half_number_of_elements * self.pxWidth)
-    #     yPosition = 0
-
-    #     for line in arrayToDraw:
-    #         # xPosition = - int(half_number_of_elements * self.pxWidth)
-    #         xPosition = 0
-    #         for pixel in line:
-    #             # Truth table for drawing a pixel
-    #             # Negative is a boolean;
-    #             # each pixel is a boolean (need to draw of not)
-    #             # Negative | Pixel | Result
-    #             #        0 |     0 | 0
-    #             #        0 |     1 | 1
-    #             #        1 |     0 | 1
-    #             #        1 |     1 | 0
-    #             # => Draw as Xor
-    #             if self.negative != pixel: # Xor...
-    #                 if self.onBack:
-    #                     adjustedXPos = xPosition
-    #                 else:
-    #                     adjustedXPos = self.qr.modules.__len__() - xPosition
-    #                 self._drawPixel(adjustedXPos, yPosition)
-    #             xPosition += self.pxWidth
-    #         yPosition += self.pxWidth
-
-    #     #int((5 + half_number_of_elements) * self.pxWidth))
-    #     textPosition = int((self.textHeight) + ((1 + halfWidth) * self.pxWidth))
-    #     self.module.Value().SetTextHeight(self.textHeight)
-    #     self.module.Value().SetTextWidth(self.textWidth)
-    #     self.module.Value().SetThickness(self.textThickness)
-    #     self.module.Reference().SetTextHeight(self.textHeight)
-    #     self.module.Reference().SetTextWidth(self.textWidth)
-    #     self.module.Reference().SetThickness(self.textThickness)
-    #     if self.onBack:
-    #         self.module.Value().Flip(pcbnew.wxPoint(0, 0))
-    #         self.module.Reference().Flip(pcbnew.wxPoint(0, 0))
-    #         textLayer = pcbnew.B_SilkS
-    #     else:
-    #         textLayer = pcbnew.F_SilkS
-    #     self.module.Value().SetPosition(pcbnew.wxPoint(0, - textPosition))
-    #     self.module.Reference().SetPosition(pcbnew.wxPoint(0, textPosition))
-    #     self.module.Value().SetLayer(textLayer)
-
-if __name__ != "__main__":
-    # Run as a KiCad plugin
-    QRCodeWizard().register()
