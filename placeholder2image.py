@@ -87,14 +87,14 @@ class Replacement:
         # creates a EDGE_MODULE of polygon type. The polygon is a square
         polygon = pcbnew.EDGE_MODULE(module)
         polygon.SetShape(pcbnew.S_POLYGON)
-        polygon.SetWidth( 0 )
+        polygon.SetWidth(0)
         layer = self.placeholderDrawing.GetLayerSet().Seq()[0]
         polygon.SetLayer(layer)
         polygon.GetPolyShape().NewOutline()
-        polygon.GetPolyShape().Append(  pos[0] + size[0], pos[1] + size[1] )
-        polygon.GetPolyShape().Append(  pos[0] + size[0], pos[1] )
-        polygon.GetPolyShape().Append(  pos[0], pos[1] )
-        polygon.GetPolyShape().Append(  pos[0], pos[1] + size[1] )
+        polygon.GetPolyShape().Append(pos[0] + size[0], pos[1] + size[1])
+        polygon.GetPolyShape().Append(pos[0] + size[0], pos[1])
+        polygon.GetPolyShape().Append(pos[0], pos[1])
+        polygon.GetPolyShape().Append(pos[0], pos[1] + size[1])
         return polygon
 
     def _createSilkPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
