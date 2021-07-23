@@ -68,7 +68,6 @@ class PixelsSource:
 def load_as_binary_image(image_path):
     try:
         with Image.open(image_path) as img:
-            # print(image_path, img.format, f"{img.size}x{img.mode}")
             if img.mode != "1":
                 img = img.convert("L")
                 img = img.convert("1")
@@ -177,7 +176,6 @@ class Replacement:
     def _createAxisAlignedSilkRect(self, module: pcbnew.MODULE, pos: (int, int), size: (int, int)):
         # build a polygon (a square) on silkscreen
         # creates a EDGE_MODULE of polygon type. The polygon is a square
-        # print("_createAxisAlignedSilkRect(%s, %s, %s)" % (module, pos, size))
         polygon = pcbnew.EDGE_MODULE(module)
         polygon.SetShape(pcbnew.S_POLYGON)
         polygon.SetWidth( 0 )
@@ -195,7 +193,6 @@ class Replacement:
 
     def _createCuPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
         # build a rectangular pad as a dot on copper layer,
-        print("_createCuPixel(%s, %s, %s)" % (module, pos, index))
         pad = pcbnew.D_PAD(module)
         pad.SetSize(pcbnew.wxSize(self.sizePixel[0], self.sizePixel[1]))
         pad.SetPosition(pcbnew.wxPoint(pos[0], pos[1]))
@@ -281,28 +278,21 @@ def extractCorners(obj, polySet):
     ys = set()
     for pi in range(0, 4):
         point = polySet.CVertex(pi)
-        print("  point: (%d, %d)" % (point.x, point.y))
         xs.add(point.x)
         ys.add(point.y)
-    print(len(xs))
-    print(len(ys))
     # Check if it is an axis-aligned rectangle
     if len(xs) != 2 or len(ys) != 2:
         raise RuntimeWarning("Not an axis-ligned rectangle: %s" % obj)
     topLeft = (min(xs), min(ys))
     bottomRight = (max(xs), max(ys))
-    print("top-left: %d, %d" % topLeft)
-    print("bottom-right: %d, %d" % bottomRight)
     return (topLeft, bottomRight)
 
 def replace_all(pcb, images_root):
     replacements = []
 
     for zone in pcb.Zones():
-        print(zone)
         ps = zone.Outline()
         if ps.OutlineCount() == 1 and ps.VertexCount() == 4:
-            # ps = zone.GetPolyShape()
             try:
                 (topLeft, bottomRight) = extractCorners(zone, ps)
             except RuntimeWarning as re:
@@ -313,7 +303,6 @@ def replace_all(pcb, images_root):
 
     for drawing in pcb.GetDrawings():
         if drawing.GetClass() == "DRAWSEGMENT" and drawing.GetShape() == pcbnew.S_POLYGON and drawing.GetPointCount() == 4 and drawing.GetPolyShape().OutlineCount() == 1 and drawing.GetPolyShape().HoleCount(0) == 0:
-            print(drawing)
             ps = drawing.GetPolyShape()
             try:
                 (topLeft, bottomRight) = extractCorners(drawing, ps)
