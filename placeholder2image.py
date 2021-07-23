@@ -224,7 +224,6 @@ def replace_all(pcb, images_root):
     for repl in replacements:
         pcb.Remove(repl.placeholderDrawing)
 
-# The CLI interface
 @click.command()
 @click.argument('kicad_pcb_in_file')
 @click.argument('kicad_pcb_out_file', required=0)
@@ -251,17 +250,6 @@ def replace_all_cli(kicad_pcb_in_file, kicad_pcb_out_file=None, images_root=None
     print(kicad_pcb_in_file)
     print(kicad_pcb_out_file)
 
-def testing():
-    image_path = "qrx.png"
-    pixels = ImagePixelsSource(image_path)
-    pixels.debug_to_stdout()
-
-    print()
-
-    pixels = QrCodePixelsSource("My Data", 1)
-    pixels.debug_to_stdout()
-
 if __name__ == "__main__":
     # Run as a CLI script
-    testing()
     replace_all_cli()

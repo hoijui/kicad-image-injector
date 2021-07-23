@@ -37,3 +37,14 @@ class ImagePixelsSource(PixelsSource):
 
     def getData(self):
         return self.image.getdata()
+
+def testing():
+    '''
+    Testing - output to stdout.
+    '''
+    image_path = "qrx.png"
+    pixels = ImagePixelsSource(image_path)
+    pixels.debug_to_stdout()
+
+if __name__ == "__main__":
+    testing()

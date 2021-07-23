@@ -51,3 +51,15 @@ class QrCodePixelsSource(PixelsSource):
         for line in array2d:
             data.extend(line)
         return list(data)
+
+def testing():
+    '''
+    Testing - output to stdout.
+    '''
+
+    data = "My Data"
+    pixels = QrCodePixelsSource(data, 1)
+    pixels.debug_to_stdout()
+
+if __name__ == "__main__":
+    testing()
