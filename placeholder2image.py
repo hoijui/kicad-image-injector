@@ -46,22 +46,22 @@ class Replacement:
     This keeps track of what to replace,
     and of *with* what to replace.
     '''
-    def __init__(self, pcb, placeholderDrawing, topLeft: int, bottomRight: int, pixelsSource: PixelsSource, stretch: bool = False, negative: bool = False):
+    def __init__(self, pcb, placeholder, top_left: int, bottom_right: int, pixels: PixelsSource, stretch: bool = False, negative: bool = False):
         self.pcb = pcb
-        self.placeholderDrawing = placeholderDrawing
-        self.topLeft = topLeft
-        self.bottomRight = bottomRight
-        self.pixelsSource = pixelsSource
+        self.placeholder = placeholder
+        self.top_left = top_left
+        self.bottom_right = bottom_right
+        self.pixels = pixels
         self.stretch = stretch
         self.negative = negative
-        self.sizeSpace = _minus(self.bottomRight, self.topLeft)
-        self.sizeRepl = self.pixelsSource.getSize()
-        self.sizePixel = self._calcPixelSize()
-        self.reverse = pcbnew.B_SilkS in self.placeholderDrawing.GetLayerSet().Seq() or pcbnew.B_Cu in self.placeholderDrawing.GetLayerSet().Seq()
-        self.firstPixelPos = self._calcFirstPixelPos()
+        self.size_space = _minus(self.bottom_right, self.top_left)
+        self.size_repl = self.pixels.getSize()
+        self.size_pixel = self._calcPixelSize()
+        self.reverse = pcbnew.B_SilkS in self.placeholder.GetLayerSet().Seq() or pcbnew.B_Cu in self.placeholder.GetLayerSet().Seq()
+        self.first_pixel_pos = self._calcFirstPixelPos()
 
     def _calcPixelSize(self) -> (int, int):
-        maxPixelSize = _div(self.sizeSpace, self.sizeRepl)
+        maxPixelSize = _div(self.size_space, self.size_repl)
         if self.stretch:
             pixelSize = maxPixelSize
         else:
@@ -74,13 +74,13 @@ class Replacement:
         return pixelSize
 
     def _calcFirstPixelPos(self) -> (int, int):
-        border = _minus(self.sizeSpace, _mult(self.sizeRepl, self.sizePixel))
+        border = _minus(self.size_space, _mult(self.size_repl, self.size_pixel))
         border = _div(border, (2, 2))
         if self.reverse:
-            firstPixelPos = (self.bottomRight[0] - border[0], self.topLeft[1] + border[1])
+            first_pixel_pos = (self.bottom_right[0] - border[0], self.top_left[1] + border[1])
         else:
-            firstPixelPos = self.topLeft + border
-        return firstPixelPos
+            first_pixel_pos = self.top_left + border
+        return first_pixel_pos
 
     def _createAxisAlignedSilkRect(self, module: pcbnew.MODULE, pos: (int, int), size: (int, int)):
         # build a polygon (a square) on silkscreen
@@ -88,7 +88,7 @@ class Replacement:
         polygon = pcbnew.EDGE_MODULE(module)
         polygon.SetShape(pcbnew.S_POLYGON)
         polygon.SetWidth(0)
-        layer = self.placeholderDrawing.GetLayerSet().Seq()[0]
+        layer = self.placeholder.GetLayerSet().Seq()[0]
         polygon.SetLayer(layer)
         polygon.GetPolyShape().NewOutline()
         polygon.GetPolyShape().Append(pos[0] + size[0], pos[1] + size[1])
@@ -98,32 +98,32 @@ class Replacement:
         return polygon
 
     def _createSilkPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
-        return self._createAxisAlignedSilkRect(module, pos, self.sizePixel)
+        return self._createAxisAlignedSilkRect(module, pos, self.size_pixel)
 
     def _createCuPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
         # build a rectangular pad as a dot on copper layer,
         pad = pcbnew.D_PAD(module)
-        pad.SetSize(pcbnew.wxSize(self.sizePixel[0], self.sizePixel[1]))
+        pad.SetSize(pcbnew.wxSize(self.size_pixel[0], self.size_pixel[1]))
         pad.SetPosition(pcbnew.wxPoint(pos[0], pos[1]))
         pad.SetLocalCoord()
         pad.SetShape(pcbnew.PAD_SHAPE_RECT)
         pad.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
         pad.SetName("")
         layerset = pcbnew.LSET()
-        if pcbnew.F_Cu in self.placeholderDrawing.GetLayerSet().Seq():
+        if pcbnew.F_Cu in self.placeholder.GetLayerSet().Seq():
             layerset.AddLayer(pcbnew.F_Cu)
             layerset.AddLayer(pcbnew.F_Mask)
         else:
             layerset.AddLayer(pcbnew.B_Cu)
             layerset.AddLayer(pcbnew.B_Mask)
-        # layerset = self.placeholderDrawing.GetLayerSet()
+        # layerset = self.placeholder.GetLayerSet()
         pad.SetLayerSet(layerset)
         return pad
 
     def _drawPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
         # build a rectangular pad as a dot on copper layer,
         # and a polygon (a square) on silkscreen
-        if pcbnew.F_SilkS in self.placeholderDrawing.GetLayerSet().Seq() or pcbnew.B_SilkS in self.placeholderDrawing.GetLayerSet().Seq():
+        if pcbnew.F_SilkS in self.placeholder.GetLayerSet().Seq() or pcbnew.B_SilkS in self.placeholder.GetLayerSet().Seq():
             pixel = self._createSilkPixel(module, index, pos)
         else:
             pixel = self._createCuPixel(module, index, pos)
@@ -135,49 +135,50 @@ class Replacement:
         module.SetDescription("Replaced template - ... - TODO") # TODO Use this for meta-data, eg. replacement image path
         module.SetLayer(pcbnew.F_SilkS) # HACK Needs to be set dynamically/fro a variable
 
-        pos = self.firstPixelPos
+        pos = self.first_pixel_pos
         pixel_i = 0
         x_i = 0
-        for pixel in self.pixelsSource.getData():
+        for pixel in self.pixels.getData():
             if (pixel != 0 and not self.negative) or (pixel == 0 and self.negative):
                 self._drawPixel(module, pixel_i, pos)
             pixel_i = pixel_i + 1
-            x_i = (x_i + 1) % self.sizeRepl[0]
+            x_i = (x_i + 1) % self.size_repl[0]
             if x_i == 0:
-                posAdjust = (-(self.sizePixel[0] * (self.sizeRepl[0] - 1)), self.sizePixel[1])
+                pos_adjust = (-(self.size_pixel[0] * (self.size_repl[0] - 1)),
+                              self.size_pixel[1])
             else:
-                posAdjust = (self.sizePixel[0], 0)
+                pos_adjust = (self.size_pixel[0], 0)
             if self.reverse:
-                posAdjust = _mult((-1, 1), posAdjust)
-            pos = _plus(pos, posAdjust)
+                pos_adjust = _mult((-1, 1), pos_adjust)
+            pos = _plus(pos, pos_adjust)
         #module.Add(self._createAxisAlignedSilkRect(module, (0, 0), (168402000, 168402000))) # HACK Just draw a huge rect, to see if it is visible -> Yes it is! :-)
         self.pcb.Add(module)
 
     def _drawCaption(self):
         # used many times...
         # half_number_of_elements = arrayToDraw.__len__() / 2
-        width = self.pixelsSource.getSize()[0]
-        halfWidth = width / 2
+        width = self.pixels.getSize()[0]
+        half_width = width / 2
 
-        #int((5 + half_number_of_elements) * self.sizePixel[0]))
-        textPosition = int((self.textHeight) + ((1 + halfWidth) * self.sizePixel[0]))
-        module = self.placeholderDrawing.GetParent()
+        #int((5 + half_number_of_elements) * self.size_pixel[0]))
+        text_pos = int((self.textHeight) + ((1 + half_width) * self.size_pixel[0]))
+        module = self.placeholder.GetParent()
 
-        module.Value().SetTextHeight(self.textHeight)
-        module.Value().SetTextWidth(self.textWidth)
-        module.Value().SetThickness(self.textThickness)
-        module.Reference().SetTextHeight(self.textHeight)
-        module.Reference().SetTextWidth(self.textWidth)
-        module.Reference().SetThickness(self.textThickness)
+        module.Value().SetTextHeight(self.text_height)
+        module.Value().SetTextWidth(self.text_width)
+        module.Value().SetThickness(self.text_thickness)
+        module.Reference().SetTextHeight(self.text_height)
+        module.Reference().SetTextWidth(self.text_width)
+        module.Reference().SetThickness(self.text_thickness)
         if self.reverse:
             module.Value().Flip(pcbnew.wxPoint(0, 0))
             module.Reference().Flip(pcbnew.wxPoint(0, 0))
-            textLayer = pcbnew.B_SilkS
+            text_layer = pcbnew.B_SilkS
         else:
-            textLayer = pcbnew.F_SilkS
-        module.Value().SetPosition(pcbnew.wxPoint(0, - textPosition))
-        module.Reference().SetPosition(pcbnew.wxPoint(0, textPosition))
-        module.Value().SetLayer(textLayer)
+            text_layer = pcbnew.F_SilkS
+        module.Value().SetPosition(pcbnew.wxPoint(0, - text_pos))
+        module.Reference().SetPosition(pcbnew.wxPoint(0, text_pos))
+        module.Value().SetLayer(text_layer)
 
 def extractCorners(obj, polySet):
     x_s = set()
@@ -189,9 +190,9 @@ def extractCorners(obj, polySet):
     # Check if it is an axis-aligned rectangle
     if len(x_s) != 2 or len(y_s) != 2:
         raise RuntimeWarning("Not an axis-ligned rectangle: %s" % obj)
-    topLeft = (min(x_s), min(y_s))
-    bottomRight = (max(x_s), max(y_s))
-    return (topLeft, bottomRight)
+    top_left = (min(x_s), min(y_s))
+    bottom_right = (max(x_s), max(y_s))
+    return (top_left, bottom_right)
 
 def replace_all(pcb, images_root):
     replacements = []
@@ -200,29 +201,30 @@ def replace_all(pcb, images_root):
         pixels = zone.Outline()
         if pixels.OutlineCount() == 1 and pixels.VertexCount() == 4:
             try:
-                (topLeft, bottomRight) = extractCorners(zone, pixels)
+                (top_left, bottom_right) = extractCorners(zone, pixels)
             except RuntimeWarning as re:
                 print("NOTE: %s" % re)
-            pixelsSource = ImagePixelsSource("qrx.png") # HACK
-            replacement = Replacement(pcb, zone, topLeft, bottomRight, pixelsSource)
+            pixels = ImagePixelsSource(os.path.join(images_root, "qrx.png")) # HACK
+            replacement = Replacement(pcb, zone, top_left, bottom_right, pixels)
             replacements.append(replacement)
 
     for drawing in pcb.GetDrawings():
         if drawing.GetClass() == "DRAWSEGMENT" and drawing.GetShape() == pcbnew.S_POLYGON and drawing.GetPointCount() == 4 and drawing.GetPolyShape().OutlineCount() == 1 and drawing.GetPolyShape().HoleCount(0) == 0:
             pixels = drawing.GetPolyShape()
             try:
-                (topLeft, bottomRight) = extractCorners(drawing, pixels)
+                (top_left, bottom_right) = extractCorners(drawing, pixels)
             except RuntimeWarning as re:
                 print("NOTE: %s" % re)
-            pixelsSource = ImagePixelsSource("qrx.png") # HACK
-            replacement = Replacement(pcb, drawing, topLeft, bottomRight, pixelsSource)
+            pixels = ImagePixelsSource("qrx.png") # HACK
+            replacement = Replacement(pcb, drawing, top_left, bottom_right,
+                                      pixels)
             replacements.append(replacement)
 
     for repl in replacements:
         repl._drawPixels()
 
     for repl in replacements:
-        pcb.Remove(repl.placeholderDrawing)
+        pcb.Remove(repl.placeholder)
 
 @click.command()
 @click.argument('kicad_pcb_in_file')
