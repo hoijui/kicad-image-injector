@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2021 Robin Vobruba <hoijui.quaero@gmail.com>
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 # KiCad QR-Code integrator
 
 status: WIP, pre-alpha
