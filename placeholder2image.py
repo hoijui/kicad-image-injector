@@ -60,6 +60,16 @@ class Replacement:
         self.reverse = pcbnew.B_SilkS in self.placeholder.GetLayerSet().Seq() or pcbnew.B_Cu in self.placeholder.GetLayerSet().Seq()
         self.first_pixel_pos = self._calcFirstPixelPos()
 
+    def _isSilk(self):
+        layers = self.placeholder.GetLayerSet().Seq()
+        return pcbnew.F_SilkS in layers or pcbnew.B_SilkS in layers
+
+    def _getLayer(self):
+        for layer in self.placeholder.GetLayerSet().Seq():
+            if layer not in (pcbnew.F_Mask, pcbnew.B_Mask):
+                return layer
+        raise RuntimeError("No non-mask layer found!")
+
     def _calcPixelSize(self) -> (int, int):
         maxPixelSize = _div(self.size_space, self.size_repl)
         if self.stretch:
@@ -123,19 +133,22 @@ class Replacement:
     def _drawPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
         # build a rectangular pad as a dot on copper layer,
         # and a polygon (a square) on silkscreen
-        if pcbnew.F_SilkS in self.placeholder.GetLayerSet().Seq() or pcbnew.B_SilkS in self.placeholder.GetLayerSet().Seq():
+        if self._isSilk():
             pixel = self._createSilkPixel(module, index, pos)
         else:
             pixel = self._createCuPixel(module, index, pos)
         module.Add(pixel)
 
-    def _drawPixels(self):
+    def drawPixels(self):
         module = pcbnew.MODULE(self.pcb)
-        # module.SetPosition(0, 0)
         module.SetDescription("Replaced template - ... - TODO") # TODO Use this for meta-data, eg. replacement image path
-        module.SetLayer(pcbnew.F_SilkS) # HACK Needs to be set dynamically/fro a variable
+        module.SetLayer(self._getLayer())
 
-        pos = self.first_pixel_pos
+        if self._isSilk():
+            module.SetPosition(pcbnew.wxPoint(self.first_pixel_pos[0], self.first_pixel_pos[1]))
+            pos = (0, 0)
+        else:
+            pos = self.first_pixel_pos
         pixel_i = 0
         x_i = 0
         for pixel in self.pixels.getData():
@@ -221,7 +234,7 @@ def replace_all(pcb, images_root):
             replacements.append(replacement)
 
     for repl in replacements:
-        repl._drawPixels()
+        repl.drawPixels()
 
     for repl in replacements:
         pcb.Remove(repl.placeholder)
