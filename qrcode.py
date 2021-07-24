@@ -12,7 +12,9 @@ DENSO WAVE INCORPORATED
 #
 # SPDX-License-Identifier: MIT
 
-"""QR Code Generator for Python
+class QRCode:
+    '''
+    QR Code Generator for Python
 
     from qrcode import QRCode, ErrorCorrectLevel
 
@@ -31,8 +33,7 @@ DENSO WAVE INCORPORATED
         for c in range(qr.getModuleCount() ):
             color = black if qr.isDark(r, c) else white
             # set pixel ...
-"""
-class QRCode:
+    '''
 
     PAD0 = 0xEC
     PAD1 = 0x11
@@ -217,41 +218,41 @@ class QRCode:
 
         rsBlocks = RSBlock.getRSBlocks(typeNumber, errorCorrectLevel)
 
-        buffer = BitBuffer()
+        buf = BitBuffer()
 
         for data in dataArray:
-            buffer.put(data.getMode(), 4)
-            buffer.put(data.getLength(), data.getLengthInBits(typeNumber) )
-            data.write(buffer)
+            buf.put(data.getMode(), 4)
+            buf.put(data.getLength(), data.getLengthInBits(typeNumber) )
+            data.write(buf)
 
         totalDataCount = sum(rsBlock.getDataCount()
                               for rsBlock in rsBlocks)
 
-        if buffer.getLengthInBits() > totalDataCount * 8:
+        if buf.getLengthInBits() > totalDataCount * 8:
             raise Exception('code length overflow. (%s > %s)' %
-                    (buffer.getLengthInBits(), totalDataCount * 8) )
+                    (buf.getLengthInBits(), totalDataCount * 8) )
 
         # end code
-        if buffer.getLengthInBits() + 4 <= totalDataCount * 8:
-            buffer.put(0, 4)
+        if buf.getLengthInBits() + 4 <= totalDataCount * 8:
+            buf.put(0, 4)
 
         # padding
-        while buffer.getLengthInBits() % 8 != 0:
-            buffer.put(False)
+        while buf.getLengthInBits() % 8 != 0:
+            buf.put(False)
 
         # padding
         while True:
-            if buffer.getLengthInBits() >= totalDataCount * 8:
+            if buf.getLengthInBits() >= totalDataCount * 8:
                 break
-            buffer.put(QRCode.PAD0, 8)
-            if buffer.getLengthInBits() >= totalDataCount * 8:
+            buf.put(QRCode.PAD0, 8)
+            if buf.getLengthInBits() >= totalDataCount * 8:
                 break
-            buffer.put(QRCode.PAD1, 8)
+            buf.put(QRCode.PAD1, 8)
 
-        return QRCode._createBytes(buffer, rsBlocks)
+        return QRCode._createBytes(buf, rsBlocks)
 
     @staticmethod
-    def _createBytes(buffer, rsBlocks):
+    def _createBytes(buf, rsBlocks):
 
         offset = 0
 
@@ -271,7 +272,7 @@ class QRCode:
 
             dcdata[r] = [0] * dcCount
             for i in range(len(dcdata[r] ) ):
-                dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset]
+                dcdata[r][i] = 0xff & buf.getBuffer()[i + offset]
             offset += dcCount
 
             rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount)
@@ -484,7 +485,7 @@ class QRUtil:
                     count += 1
                 if qrcode.isDark(row + 1, col + 1):
                     count += 1
-                if count == 0 or count == 4:
+                if count in (0, 4):
                     lostPoint += 3
 
         # LEVEL3
@@ -569,14 +570,14 @@ class QR8BitByte:
         return self.data
 
     '''
-    def write(self, buffer): raise Exception('not implemented.')
+    def write(self, buf): raise Exception('not implemented.')
     def getLength(self): raise Exception('not implemented.')
     '''
 
-    def write(self, buffer):
+    def write(self, buf):
         data = QRUtil.stringToBytes(self.getData() )
         for d in data:
-            buffer.put(d, 8)
+            buf.put(d, 8)
 
     def getLength(self):
         return len(QRUtil.stringToBytes(self.getData() ) )
@@ -795,23 +796,23 @@ class BitBuffer:
 
     def __init__(self, inclements=32):
         self.inclements = inclements
-        self.buffer = [0] * self.inclements
+        self.buf = [0] * self.inclements
         self.length = 0
 
     def getBuffer(self):
-        return self.buffer
+        return self.buf
 
     def getLengthInBits(self):
         return self.length
 
     def get(self, index):
-        return ( (self.buffer[index // 8] >> (7 - index % 8) ) & 1) == 1
+        return ( (self.buf[index // 8] >> (7 - index % 8) ) & 1) == 1
 
     def putBit(self, bit):
-        if self.length == len(self.buffer) * 8:
-            self.buffer += [0] * self.inclements
+        if self.length == len(self.buf) * 8:
+            self.buf += [0] * self.inclements
         if bit:
-            self.buffer[self.length // 8] |= (0x80 >> (self.length % 8) )
+            self.buf[self.length // 8] |= (0x80 >> (self.length % 8) )
         self.length += 1
 
     def put(self, num, length):
