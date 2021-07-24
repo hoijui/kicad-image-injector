@@ -6,6 +6,13 @@ SPDX-License-Identifier: CC0-1.0
 
 # KiCad QR-Code integrator
 
+[![License: GPL-3.0-or-later](
+https://img.shields.io/badge/License-GPL%203.0+-blue.svg)](
+https://www.gnu.org/licenses/gpl-3.0.txt)
+[![REUSE status](
+https://api.reuse.software/badge/github.com/hoijui/kicad-image-injector)](
+https://api.reuse.software/info/github.com/hoijui/kicad-image-injector)
+
 status: WIP, pre-alpha
 
 This tool might do one of two things in the end:
