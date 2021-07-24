@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: 2021 Robin Vobruba <hoijui.quaero@gmail.com>
 SPDX-License-Identifier: CC0-1.0
 -->
 
-# KiCad QR-Code integrator
+# KiCad image/QR-Code integrator
 
 [![License: GPL-3.0-or-later](
 https://img.shields.io/badge/License-GPL%203.0+-blue.svg)](
@@ -13,42 +13,69 @@ https://www.gnu.org/licenses/gpl-3.0.txt)
 https://api.reuse.software/badge/github.com/hoijui/kicad-image-injector)](
 https://api.reuse.software/info/github.com/hoijui/kicad-image-injector)
 
-status: WIP, pre-alpha
+status: WIP,  tech-demo, alpha
 
-This tool might do one of two things in the end:
+## What is this
 
-1. take a bunch of data (a string?),
-   and create a QR-Code representing that data directly onto the PCB,
-   creating one square object per each QR-Code pixel.
-2. take an arbitrary B&W pixel-image (which might be a QR-Code),
-   and reproduce it on the PCB in some way. (same as above?)
+A stand-alone (python) tool
+to replace rectangular template areas drawn onto a KiCad PCB
+with B&W images or QR-Codes.
 
-## The Files
+This was written with the intention to include QR-Codes
+containing git-commit specific information
+onto a PCB and later the generated Gerber & Drill files
+in a CI job.
 
-* [qrcode.py](qrcode.py) -
-  (foreign code)
-  Given data (string), creates a QR-Code on a PCB, pixel by pixel.
-  Use like this:
+## What it does
 
-  ```
-  # generate with explicit type number
-  qr = QRCode()
-  qr.setTypeNumber(4)
-  qr.setErrorCorrectLevel(ErrorCorrectLevel.M)
-  qr.addData('here comes qr!')
-  qr.make()
-  ```
+pseudo code (python):
 
-* [qrcode_footprint_wizard.py](qrcode_footprint_wizard.py) -
-  (foreign code)
-  GUI/Plugin interface for `qrcode.py`
-  
-* [qrcode_tempalte_replacer.py](qrcode_tempalte_replacer.py) -
-  WIP -
-  Should be the KiCad GUI/plugin to place QR-Code/Image placeholders,
-  later to be replaced automatically by TODO
-  
-* [placeholder2image.py](placeholder2image.py) -
-  TODO -
-  Given a KiCAD PCB file and a set of images,
-  replaces all image-placeholders within the PCB with the actual images.
+```python
+pcb = parseKicadPcb("some_board.kicad_pcb")
+placeholders = scanForPlaceholderRectangles(pcb)
+for p_holder in placeholders:
+    if referencesImage(p_holder):
+       pixels = loadImagePixels(p_holder.imagePath)
+    elif referencesQrData(p_holder):
+       pixels = generateQrCode(p_holder.data)
+    pcb.replace(p_holder, pixels)
+pcb.writeKicadPcb("some_board-REPLACED.kicad_pcb")
+```
+
+## Usage
+
+1. You design your PCB in KiCad,
+    and include rectangular areas on any silk or copper layer.
+    In the description of the rectangular drawing (silk layer) or zone (copper layer),
+    you either reference the image path,
+    or the data to be included as a QR-code.
+
+    **TODO** \
+    Actually make this work and maybe implement a GUI plugin to guide though this,
+    ensuring correct encoding of this meta-data in the description.
+
+2. Make sure (e.g. generate) the referenced images are available.
+
+3. run this tool, e.g.:
+
+    ```bash
+    python3 placeholder2image.py ~/some/path/board.kicad_pcb
+    ```
+
+4. do what you want with the generated PCB:
+   `~/some/path/board-REPLACED.kicad_pcb`
+
+Run `python3 placeholder2image.py --help` for more info.
+
+## Example
+
+input:
+
+![input QR-Code](qr.png)
+(generated with: `qrencode -s 1 -m 1 -o qr.png "My Data"`)
+
+[![input PCB](kicad-board-0-design.svg)](https://github.com/hoijui/for-science-keyboar/base.kicad_pcb)
+
+output:
+
+![output PCB](kicad-board-1-generated.svg)
