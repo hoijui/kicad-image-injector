@@ -17,9 +17,9 @@ import qrcode
 # TODO Document!!
 '''
 How to generate a Sample QR-Code:
-$ qrencode --structured --symversion 1 --size 1 --margin 1 --output qrx.png "My Data"
+$ qrencode --structured --symversion 1 --size 1 --margin 1 --output qr.png "My Data"
 $ # or the same in short:
-$ qrencode -S -v 1 -s 1 -m 1 -o qrx.png "My Data"
+$ qrencode -S -v 1 -s 1 -m 1 -o qr.png "My Data"
 '''
 
 # MIN_PIXEL_WIDTH = 0.5 * mm # TODO
@@ -59,7 +59,7 @@ class QRCodeWizard(FootprintWizardBase.FootprintWizard):
         self.textHeight = int(self.parameters['Caption']['Height'])
         self.textThickness = int(self.parameters['Caption']['Thickness'])
         self.textWidth = int(self.parameters['Caption']['Width'])
-        self.pixelsSource = ImagePixelsSource("qrx.png") # HACK
+        self.pixelsSource = ImagePixelsSource("qr.png") # HACK
         self.module.Value().SetText(str(self.barcode))
 
 if __name__ != "__main__":

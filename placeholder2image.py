@@ -1,8 +1,8 @@
 '''
 How to generate a Sample QR-Code:
-$ qrencode --structured --symversion 1 --size 1 --margin 1 --output qrx.png "My Data"
+$ qrencode --structured --symversion 1 --size 1 --margin 1 --output qr.png "My Data"
 $ # or the same in short:
-$ qrencode -S -v 1 -s 1 -m 1 -o qrx.png "My Data"
+$ qrencode -S -v 1 -s 1 -m 1 -o qr.png "My Data"
 '''
 # TODO Document!!
 
@@ -215,7 +215,7 @@ def replace_all(pcb, images_root):
                 (top_left, bottom_right) = extractCorners(zone, pixels)
             except RuntimeWarning as re:
                 print("NOTE: %s" % re)
-            pixels = ImagePixelsSource(os.path.join(images_root, "qrx.png")) # HACK
+            pixels = ImagePixelsSource(os.path.join(images_root, "qr.png")) # HACK
             replacement = Replacement(pcb, zone, top_left, bottom_right, pixels)
             replacements.append(replacement)
 
@@ -226,7 +226,7 @@ def replace_all(pcb, images_root):
                 (top_left, bottom_right) = extractCorners(drawing, pixels)
             except RuntimeWarning as re:
                 print("NOTE: %s" % re)
-            pixels = ImagePixelsSource("qrx.png") # HACK
+            pixels = ImagePixelsSource("qr.png") # HACK
             replacement = Replacement(pcb, drawing, top_left, bottom_right,
                                       pixels)
             replacements.append(replacement)

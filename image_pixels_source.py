@@ -42,7 +42,7 @@ def testing():
     '''
     Testing - output to stdout.
     '''
-    image_path = "qrx.png"
+    image_path = "qr.png"
     pixels = ImagePixelsSource(image_path)
     pixels.debug_to_stdout()
 
