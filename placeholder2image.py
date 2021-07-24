@@ -157,14 +157,12 @@ class Replacement:
             pixel_i = pixel_i + 1
             x_i = (x_i + 1) % self.size_repl[0]
             if x_i == 0:
-                pos_adjust = (-(self.size_pixel[0] * (self.size_repl[0] - 1)),
-                              self.size_pixel[1])
+                pos_adjust = (-(self.size_pixel[0] * (self.size_repl[0] - 1)), self.size_pixel[1])
             else:
                 pos_adjust = (self.size_pixel[0], 0)
             if self.reverse:
                 pos_adjust = _mult((-1, 1), pos_adjust)
             pos = _plus(pos, pos_adjust)
-        #module.Add(self._createAxisAlignedSilkRect(module, (0, 0), (168402000, 168402000))) # HACK Just draw a huge rect, to see if it is visible -> Yes it is! :-)
         self.pcb.Add(module)
 
     def _drawCaption(self):
@@ -174,8 +172,8 @@ class Replacement:
         half_width = width / 2
 
         #int((5 + half_number_of_elements) * self.size_pixel[0]))
-        text_pos = int((self.textHeight) + ((1 + half_width) * self.size_pixel[0]))
-        module = self.placeholder.GetParent()
+        text_pos = int((self.text_height) + ((1 + half_width) * self.size_pixel[0]))
+        module = self.module
 
         module.Value().SetTextHeight(self.text_height)
         module.Value().SetTextWidth(self.text_width)
