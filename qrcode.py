@@ -39,7 +39,7 @@ class QRCode:
     PAD1 = 0x11
 
     def __init__(self):
-        self.typeNumber = 1
+        self.typeNumber = None
         self.errorCorrectLevel = ErrorCorrectLevel.H
         self.qrDataList = []
         self.modules = []
@@ -90,7 +90,24 @@ class QRCode:
                 pattern = i
         return pattern
 
+    def _determineMinTypeNumber(self):
+        self.typeNumber = 0
+        while True:
+            try:
+                self.typeNumber = self.typeNumber + 1
+                self._make(True, 1)
+                break
+            except:
+                continue
+        res = self.typeNumber
+        self.typeNumber = None
+        return res
+
     def _make(self, test, maskPattern):
+
+        if self.typeNumber is None:
+            # Auto-determine minimal required type
+            self.typeNumber = self._determineMinTypeNumber()
 
         self.moduleCount = self.typeNumber * 4 + 17
         self.modules = [[None] * self.moduleCount
