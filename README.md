@@ -44,22 +44,18 @@ pcb.writeKicadPcb("some_board-REPLACED.kicad_pcb")
 
 ## Usage
 
-1. You design your PCB in KiCad,
+1. You design your PCB in KiCad
     and include rectangular areas on any silk or copper layer.
-    In the description of the rectangular drawing (silk layer) or zone (copper layer),
-    you either reference the image path,
-    or the data to be included as a QR-code.
+    Remember how many rectangles you created!
 
-    **TODO** \
-    Actually make this work and maybe implement a GUI plugin to guide though this,
-    ensuring correct encoding of this meta-data in the description.
+2. Make sure the images you want to inject are available (e.g. generate them).
 
-2. Make sure (e.g. generate) the referenced images are available.
-
-3. run this tool, e.g.:
+3. run this tool with the appropriate number of arguments
+    (image paths or qr-code data strings).
+    In the case of two placeholder rectangles, it could be:
 
     ```bash
-    python3 placeholder2image.py ~/some/path/board.kicad_pcb
+    python3 placeholder2image.py ~/some/path/board.kicad_pcb qr.png 'qr:My Data'
     ```
 
 4. do what you want with the generated PCB:
