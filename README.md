@@ -46,6 +46,12 @@ pcb.writeKicadPcb("some_board-REPLACED.kicad_pcb")
 
 1. You design your PCB in KiCad
     and include rectangular areas on any silk or copper layer.
+    You do this by opening your PCB in KiCad (PCBnew),
+    selecting the menu item `Place -> Polygon`,
+    drawing an axis-aligned rectangle
+    (don't worry if it is not perfect, you can adjust it after creation),
+    right-click on it, select `Properties...`,
+    select the layer you want (any of: `F.Cu`, `B.Cu`, `F.SilkS`, `B.SilkS`).
     Remember how many rectangles you created!
 
 2. Make sure the images you want to inject are available (e.g. generate them).
