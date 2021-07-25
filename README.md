@@ -13,7 +13,7 @@ https://www.gnu.org/licenses/gpl-3.0.txt)
 https://api.reuse.software/badge/github.com/hoijui/kicad-image-injector)](
 https://api.reuse.software/info/github.com/hoijui/kicad-image-injector)
 
-status: WIP,  tech-demo, alpha
+status: beta
 
 ## What is this
 
