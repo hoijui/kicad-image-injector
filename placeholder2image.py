@@ -344,8 +344,7 @@ def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=No
     pcb = pcbnew.LoadBoard(input)
     replace_all(pcb, images_root, repl_identifiers)
     pcbnew.SaveBoard(output, pcb)
-    print(input)
-    print(output)
+    print(f"Written {output}!")
 
 if __name__ == "__main__":
     # Run as a CLI script
