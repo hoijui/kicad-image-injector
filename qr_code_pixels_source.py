@@ -18,6 +18,7 @@ class QrCodePixelsSource(PixelsSource):
     encoded as a QR-Code.
     '''
     def __init__(self, content, border=1):
+        self.content = content
         self.border = border
         # Build QR-Code
         self.qrc = qrcode.QRCode()
@@ -28,6 +29,9 @@ class QrCodePixelsSource(PixelsSource):
         self.qrc.addData(str(content))
         self.qrc.make()
         self.len = self.qrc.modules.__len__() + (self.border * 2)
+
+    def __str__(self):
+        return f"QR-Code-PixelsSource[data: '{self.content}']"
 
     def getSize(self):
         return (self.len, self.len)

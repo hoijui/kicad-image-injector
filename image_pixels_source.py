@@ -30,7 +30,11 @@ class ImagePixelsSource(PixelsSource):
     Allows to use pixel image files as sources for black&white pixels.
     '''
     def __init__(self, image_path):
+        self.image_path = image_path
         self.image = load_as_binary_image(image_path)
+
+    def __str__(self):
+        return f"Image-PixelsSource[path: '{self.image_path}']"
 
     def getSize(self):
         return self.image.size
