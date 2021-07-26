@@ -56,7 +56,10 @@ def remove_prefix(text, prefix):
     return text
 
 def ident2pixels_source(images_root, str):
-    if str.startswith(ID_PREFIX_QR_CODE):
+    if str in ('', 'skip'):
+        # skip replacing this viable placeholder polygon
+        ps = None
+    elif str.startswith(ID_PREFIX_QR_CODE):
         qr_code_data = remove_prefix(str, ID_PREFIX_QR_CODE)
         ps = QrCodePixelsSource(qr_code_data)
     elif str.startswith(ID_PREFIX_IMAGE):
@@ -301,8 +304,9 @@ def replace_all_with(pcb, pixels_sources):
     replacements = []
     phi = 0
     for psi in pixels_sources:
-         replacements.append(Replacement(pcb, placeholders[phi], psi))
-         phi = phi + 1
+        if psi is not None:
+            replacements.append(Replacement(pcb, placeholders[phi], psi))
+        phi = phi + 1
 
     for repl in replacements:
         repl.drawPixels()
