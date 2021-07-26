@@ -324,14 +324,23 @@ def replace_all(pcb, images_root, pixels_sources_identifiers):
 @click.option('--output', '-o', type=click.Path(),
         default=None, help='Output file path (default: input-REPLACED.kicad_pcb)')
 @click.option('--images-root', '-r', type=click.Path(), envvar='IMAGES_ROOT',
-        default=None, help='Where to resolve relative image paths to')
+        default=None, help='Where to resolve relative image paths to (default: CWD)')
 def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=None):
-    """Replaces all QR-Code template polygons with the actual QR-Code image,
-    both on the Copepr and Silkscreen layers,
-    on the front and on the back, in a KiCad PCB file (*.kicad_pcb).
+    """
+    Replaces all image- and QRCode-template polygons with the actual pixels.
+    It supports KiCad (PCBnew) "*.kicad_pcb" files,
+    copper and silk-screen layers, front and back.
 
-    KICAD_PCB_IN_FILE - The path to the `*.kicad_pcb` input file to replace QR-Code templates in
-    KICAD_PCB_OUT_FILE - The path to the `*.kicad_pcb` output file
+    REPL_IDENTIFIERS - Each one of identifies one image, QR-Code or a "skip".
+    They have ot appear in the same order as you want them to be replaced in the PCB,
+    and the number of these has to correspond exactly to the number of viable repalcement polygons.
+    Examples (for single) identifiers:
+
+    * for an Image:   "./path/to/image.png"
+
+    * for a QR-Code:  "qr:Data I want to be encoded in the QR-Code"
+
+    * no replacement: "" or "skip"
     """
     if output is None:
         output = R_KICAD_PCB_EXT.sub("-REPLACED.kicad_pcb", input)
@@ -347,5 +356,4 @@ def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=No
     print(f"Written {output}!")
 
 if __name__ == "__main__":
-    # Run as a CLI script
     replace_all_cli()
