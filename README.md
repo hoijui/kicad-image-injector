@@ -4,11 +4,11 @@ SPDX-FileCopyrightText: 2021 Robin Vobruba <hoijui.quaero@gmail.com>
 SPDX-License-Identifier: CC0-1.0
 -->
 
-# KiCad image/QR-Code integrator
+# KiCad image/QR-Code injector
 
 [![License: GPL-3.0-or-later](
 https://img.shields.io/badge/License-GPL%203.0+-blue.svg)](
-https://www.gnu.org/licenses/gpl-3.0.txt)
+https://www.gnu.org/licenses/gpl-3.0.html)
 [![REUSE status](
 https://api.reuse.software/badge/github.com/hoijui/kicad-image-injector)](
 https://api.reuse.software/info/github.com/hoijui/kicad-image-injector)
@@ -128,3 +128,7 @@ input:
 output:
 
 ![output PCB](kicad-board-1-generated.svg)
+
+## Misc
+
+Please also see the [KiCad text injector](https://github.com/hoijui/kicad-text-injector).
