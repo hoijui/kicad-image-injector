@@ -19,6 +19,7 @@ import pcbnew
 from pixels_source import PixelsSource
 from image_pixels_source import ImagePixelsSource
 from qr_code_pixels_source import QrCodePixelsSource
+from string_pixels_source import StringPixelsSource
 
 # MIN_PIXEL_WIDTH = 0.5 * mm # TODO
 MIN_PIXEL_WIDTH = 0.5 * 100000 # TODO Is this the correct multiplier
@@ -241,7 +242,7 @@ def extractCorners(obj, polySet):
     bottom_right = (max(x_s), max(y_s))
     return (top_left, bottom_right)
 
-def replace_all_with(pcb, pixels_sources):
+def scanForPlaceholders(pcb):
     placeholders = []
 
     for zone in pcb.Zones():
@@ -264,17 +265,19 @@ def replace_all_with(pcb, pixels_sources):
             placeholder = Placeholder(drawing, top_left, bottom_right)
             placeholders.append(placeholder)
 
-    if len(pixels_sources) != len(placeholders):
-        raise RuntimeError(f"{len(placeholders)} placeholders were found but {len(pixels_sources)} pixels-sources were supplied; they need to be the same amount!")
-
-    # NOTE This uses Natural order for Placeholder objects, see Placeholder.__lt__(self, other)
+    # NOTE This uses natural order for Placeholder objects, see Placeholder.__lt__(self, other)
     placeholders.sort()
 
+    return placeholders
+
+def replace_all_with(pcb, placeholders, pixels_sources, stretch=False):
+    if len(pixels_sources) != len(placeholders):
+        raise RuntimeError(f"{len(placeholders)} placeholders were found but {len(pixels_sources)} pixels-sources were supplied; they need to be the same amount!")
     replacements = []
     phi = 0
     for psi in pixels_sources:
         if psi is not None:
-            replacements.append(Replacement(pcb, placeholders[phi], psi))
+            replacements.append(Replacement(pcb, placeholders[phi], psi, stretch=stretch))
         phi = phi + 1
 
     for repl in replacements:
@@ -283,12 +286,21 @@ def replace_all_with(pcb, pixels_sources):
     for repl in replacements:
         pcb.Remove(repl.placeholder.board_element)
 
+def show_placeholder_order(pcb):
+    placeholders = scanForPlaceholders(pcb)
+    pixels_sources = []
+    for i in range(0, len(placeholders)):
+        ps = StringPixelsSource(str(i + 1))
+        pixels_sources.append(ps)
+    replace_all_with(pcb, placeholders, pixels_sources, stretch=True)
+
 def replace_all(pcb, images_root, pixels_sources_identifiers):
+    placeholders = scanForPlaceholders(pcb)
     pixels_sources = []
     for psi in pixels_sources_identifiers:
         ps = ident2pixels_source(images_root, psi)
         pixels_sources.append(ps)
-    replace_all_with(pcb, pixels_sources)
+    replace_all_with(pcb, placeholders, pixels_sources)
 
 @click.command()
 @click.argument("repl_identifiers", type=click.STRING, nargs=-1)
@@ -298,7 +310,9 @@ def replace_all(pcb, images_root, pixels_sources_identifiers):
         default=None, help='Output file path (default: input-REPLACED.kicad_pcb)')
 @click.option('--images-root', '-r', type=click.Path(), envvar='IMAGES_ROOT',
         default=None, help='Where to resolve relative image paths to (default: CWD)')
-def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=None):
+@click.option('--show-order', '-s', is_flag=True,
+        help='Instead of supplied pixels sources, the placehodlers get replaced by images of numbers, according to their order as considered by this tool.')
+def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=None, show_order=False):
     """
     Replaces all image- and QRCode-template polygons with the actual pixels.
     It supports KiCad (PCBnew) "*.kicad_pcb" files,
@@ -324,7 +338,10 @@ def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=No
         raise RuntimeError("KiCad PCB input and output file names can not be the same!")
 
     pcb = pcbnew.LoadBoard(input)
-    replace_all(pcb, images_root, repl_identifiers)
+    if show_order:
+        show_placeholder_order(pcb)
+    else:
+        replace_all(pcb, images_root, repl_identifiers)
     pcbnew.SaveBoard(output, pcb)
     print(f"Written {output}!")
 
