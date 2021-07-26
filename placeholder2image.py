@@ -159,9 +159,10 @@ class Replacement:
             first_pixel_pos = self.placeholder.top_left + border
         return first_pixel_pos
 
-    def _createAxisAlignedSilkRect(self, module: pcbnew.MODULE, pos: (int, int), size: (int, int)):
-        # build a polygon (a square) on silkscreen
-        # creates a EDGE_MODULE of polygon type. The polygon is a square
+    def _createAxisAlignedRect(self, module: pcbnew.MODULE, pos: (int, int), size: (int, int)):
+        '''
+        Builds an axis-aligned rectangle (as a polygon) as a graphical element/drawing.
+        '''
         polygon = pcbnew.EDGE_MODULE(module)
         polygon.SetShape(pcbnew.S_POLYGON)
         polygon.SetWidth(0)
@@ -174,48 +175,16 @@ class Replacement:
         polygon.GetPolyShape().Append(pos[0], pos[1] + size[1])
         return polygon
 
-    def _createSilkPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
-        return self._createAxisAlignedSilkRect(module, pos, self.size_pixel)
-
-    def _createCuPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
-        # build a rectangular pad as a dot on copper layer,
-        pad = pcbnew.D_PAD(module)
-        pad.SetSize(pcbnew.wxSize(self.size_pixel[0], self.size_pixel[1]))
-        pad.SetPosition(pcbnew.wxPoint(pos[0], pos[1]))
-        pad.SetLocalCoord()
-        pad.SetShape(pcbnew.PAD_SHAPE_RECT)
-        pad.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
-        pad.SetName("")
-        layerset = pcbnew.LSET()
-        if pcbnew.F_Cu in self.placeholder.board_element.GetLayerSet().Seq():
-            layerset.AddLayer(pcbnew.F_Cu)
-            layerset.AddLayer(pcbnew.F_Mask)
-        else:
-            layerset.AddLayer(pcbnew.B_Cu)
-            layerset.AddLayer(pcbnew.B_Mask)
-        #layerset = self.placeholder.GetLayerSet()
-        pad.SetLayerSet(layerset)
-        return pad
-
     def _drawPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
-        # build a rectangular pad as a dot on copper layer,
-        # and a polygon (a square) on silkscreen
-        if self.placeholder.isSilk():
-            pixel = self._createSilkPixel(module, index, pos)
-        else:
-            pixel = self._createCuPixel(module, index, pos)
-        module.Add(pixel)
+        module.Add(self._createAxisAlignedRect(module, pos, self.size_pixel))
 
     def drawPixels(self):
         module = pcbnew.MODULE(self.pcb)
         module.SetDescription(f"Replaced template - {self.pixels}")
         module.SetLayer(self.placeholder.getLayer())
 
-        if self.placeholder.isSilk():
-            module.SetPosition(pcbnew.wxPoint(self.first_pixel_pos[0], self.first_pixel_pos[1]))
-            pos = (0, 0)
-        else:
-            pos = self.first_pixel_pos
+        module.SetPosition(pcbnew.wxPoint(self.first_pixel_pos[0], self.first_pixel_pos[1]))
+        pos = (0, 0)
         pixel_i = 0
         x_i = 0
         for pixel in self.pixels.getData():
