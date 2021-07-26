@@ -33,10 +33,18 @@ pseudo code (python):
 ```python
 pcb = parseKicadPcb("some_board.kicad_pcb")
 placeholders = scanForPlaceholderRectangles(pcb)
-for p_holder in placeholders:
-    if referencesImage(p_holder):
+replacements = cli_args.getAsList("replacements")
+if len(placeholders) != len(replacements):
+    print("Bad!")
+    exit(1)
+for i in range(0, len(placeholders)):
+    p_holder = placeholders[i]
+    repl = replacements[i]
+    if isSkip(repl):
+        continue
+    elif isImage(repl):
        pixels = loadImagePixels(p_holder.imagePath)
-    elif referencesQrData(p_holder):
+    elif isQrData(repl):
        pixels = generateQrCode(p_holder.data)
     pcb.replace(p_holder, pixels)
 pcb.writeKicadPcb("some_board-REPLACED.kicad_pcb")
