@@ -304,11 +304,11 @@ def replace_all(pcb, images_root, pixels_sources_identifiers):
 
 @click.command()
 @click.argument("repl_identifiers", type=click.STRING, nargs=-1)
-@click.option('--input', '-i', type=click.Path(), required=1,
+@click.option('--input', '-i', type=click.Path(exists=True, dir_okay=False, file_okay=True, readable=True), required=1,
         default=None, help='Path to the input *.kicad_pcb file')
-@click.option('--output', '-o', type=click.Path(),
+@click.option('--output', '-o', type=click.Path(exists=True, dir_okay=False, file_okay=True, writable=True),
         default=None, help='Output file path (default: input-REPLACED.kicad_pcb)')
-@click.option('--images-root', '-r', type=click.Path(), envvar='IMAGES_ROOT',
+@click.option('--images-root', '-r', type=click.Path(exists=True, dir_okay=True, file_okay=False, readable=True), envvar='IMAGES_ROOT',
         default=None, help='Where to resolve relative image paths to (default: CWD)')
 @click.option('--show-order', '-s', is_flag=True,
         help='Instead of supplied pixels sources, the placehodlers get replaced by images of numbers, according to their order as considered by this tool.')
