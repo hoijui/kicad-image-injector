@@ -313,7 +313,7 @@ def replace_all(pcb, images_root, pixels_sources_identifiers):
 @click.option('--show-order', '-s', is_flag=True,
         help='Instead of supplied pixels sources, the placehodlers get replaced by images of numbers, according to their order as considered by this tool.')
 def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=None, show_order=False):
-    """
+    '''
     Replaces all image- and QRCode-template polygons with the actual pixels.
     It supports KiCad (PCBnew) "*.kicad_pcb" files,
     copper and silk-screen layers, front and back.
@@ -328,7 +328,7 @@ def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=No
     * for a QR-Code:  "qr:Data I want to be encoded in the QR-Code"
 
     * no replacement: "" or "skip"
-    """
+    '''
     if output is None:
         output = R_KICAD_PCB_EXT.sub("-REPLACED.kicad_pcb", input)
     if images_root is None:
