@@ -272,7 +272,9 @@ def scanForPlaceholders(pcb):
 
 def replace_all_with(pcb, placeholders, pixels_sources, stretch=False):
     if len(pixels_sources) != len(placeholders):
-        raise RuntimeError(f"{len(placeholders)} placeholders were found but {len(pixels_sources)} pixels-sources were supplied; they need to be the same amount!")
+        raise RuntimeError(f"{len(placeholders)} placeholders were found "
+                + "but {len(pixels_sources)} pixels-sources were supplied; "
+                + "they need to be the same amount!")
     replacements = []
     phi = 0
     for psi in pixels_sources:
