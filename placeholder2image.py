@@ -312,9 +312,11 @@ def replace_all(pcb, images_root, pixels_sources_identifiers):
         default=None, help='Output file path (default: input-REPLACED.kicad_pcb)')
 @click.option('--images-root', '-r', type=click.Path(exists=True, dir_okay=True, file_okay=False, readable=True), envvar='IMAGES_ROOT',
         default=None, help='Where to resolve relative image paths to (default: CWD)')
+@click.option('--repl-idents-list-file', '-l', type=click.Path(exists=True, dir_okay=False, file_okay=True, readable=True), envvar='REPL_IDENTS_LIST_FILE',
+        default=None, help='File that contains a list of image paths (one per line) to inject')
 @click.option('--show-order', '-s', is_flag=True,
         help='Instead of supplied pixels sources, the placehodlers get replaced by images of numbers, according to their order as considered by this tool.')
-def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=None, show_order=False):
+def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=None, repl_idents_list_file=None, show_order=False):
     '''
     Replaces all image- and QRCode-template polygons with the actual pixels.
     It supports KiCad (PCBnew) "*.kicad_pcb" files,
@@ -338,6 +340,16 @@ def replace_all_cli(repl_identifiers={}, input=None, output=None, images_root=No
 
     if input == output:
         raise RuntimeError("KiCad PCB input and output file names can not be the same!")
+
+    repl_identifiers_from_file = {}
+    if repl_idents_list_file is not None:
+        with open(repl_idents_list_file) as idents_f:
+            repl_identifiers_from_file = [line.rstrip() for line in idents_f]
+
+    if len(repl_identifiers_from_file) > 0:
+        if len(repl_identifiers) > 0:
+            raise RuntimeError("You may not specify replacement identifiers both on the command line (REPL_IDENTIFIERS) and through a file (--repl-idents-list-file)!")
+        repl_identifiers = repl_identifiers_from_file
 
     pcb = pcbnew.LoadBoard(input)
     if show_order:
