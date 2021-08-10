@@ -16,14 +16,11 @@ def load_as_binary_image(image_path):
     converting it to a binary one (== black&white),
     if it is not yet one.
     '''
-    try:
-        with Image.open(image_path) as img:
-            if img.mode != "1":
-                img = img.convert("L")
-                img = img.convert("1")
-            return img
-    except OSError:
-        pass
+    with Image.open(image_path) as img:
+        if img.mode != "1":
+            img = img.convert("L")
+            img = img.convert("1")
+        return img
 
 class ImagePixelsSource(PixelsSource):
     '''
