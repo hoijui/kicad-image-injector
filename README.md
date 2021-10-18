@@ -59,11 +59,14 @@ pcb.writeKicadPcb("some_board-REPLACED.kicad_pcb")
 2. Make sure the images you want to inject are available (e.g. generate them).
 
 3. Run this tool with the appropriate number of arguments
-    (image paths, qr-code data strings or skip instructions).
-    In the case of three placeholder rectangles, it could be:
-
+    (Identifiers can be (1) image paths, (2) qr-code data strings or (3) skip instructions).
+    
     ```bash
-    python3 placeholder2image.py ~/some/path/board.kicad_pcb qr.png skip 'qr:My Data'
+    # simplest example
+    python3 placeholder2image.py --input foo.kicad_pcb qr_to_inject.png
+
+    # In the case of three placeholder rectangles in Kicad, use three identifier arguments:
+    python3 placeholder2image.py --input ~/some/path/board.kicad_pcb qr.png skip 'qr:My Data'
     ```
 
     NOTE: Take care of using the [correct order](#order-of-placeholders)
