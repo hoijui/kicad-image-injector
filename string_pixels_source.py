@@ -10,7 +10,7 @@ from PIL import Image, ImageFont, ImageDraw, ImageEnhance
 
 from pixels_source import PixelsSource
 
-_FONT = ImageFont.truetype(font="arial", size=30)
+_FONT = ImageFont.truetype(font="LiberationSerif-Regular", size=30)
 
 class StringPixelsSource(PixelsSource):
     '''
