@@ -160,11 +160,11 @@ class Replacement:
             first_pixel_pos = self.placeholder.top_left + border
         return first_pixel_pos
 
-    def _createAxisAlignedRect(self, module: pcbnew.MODULE, pos: (int, int), size: (int, int)):
+    def _createAxisAlignedRect(self, footprint: pcbnew.FOOTPRINT, pos: (int, int), size: (int, int)):
         '''
         Builds an axis-aligned rectangle (as a polygon) as a graphical element/drawing.
         '''
-        polygon = pcbnew.EDGE_MODULE(module)
+        polygon = pcbnew.FP_SHAPE(footprint)
         polygon.SetShape(pcbnew.S_POLYGON)
         polygon.SetWidth(0)
         layer = self.placeholder.getLayer()
@@ -174,23 +174,24 @@ class Replacement:
         polygon.GetPolyShape().Append(pos[0] + size[0], pos[1])
         polygon.GetPolyShape().Append(pos[0], pos[1])
         polygon.GetPolyShape().Append(pos[0], pos[1] + size[1])
+        polygon.SetFilled(True)
         return polygon
 
-    def _drawPixel(self, module: pcbnew.MODULE, index: int, pos: (int, int)):
-        module.Add(self._createAxisAlignedRect(module, pos, self.size_pixel))
+    def _drawPixel(self, footprint: pcbnew.FOOTPRINT, index: int, pos: (int, int)):
+        footprint.Add(self._createAxisAlignedRect(footprint, pos, self.size_pixel))
 
     def drawPixels(self):
-        module = pcbnew.MODULE(self.pcb)
-        module.SetDescription(f"Replaced template - {self.pixels}")
-        module.SetLayer(self.placeholder.getLayer())
+        footprint = pcbnew.FOOTPRINT(self.pcb)
+        footprint.SetDescription(f"Replaced template - {self.pixels}")
+        footprint.SetLayer(self.placeholder.getLayer())
 
-        module.SetPosition(pcbnew.wxPoint(self.first_pixel_pos[0], self.first_pixel_pos[1]))
+        footprint.SetPosition(pcbnew.wxPoint(self.first_pixel_pos[0], self.first_pixel_pos[1]))
         pos = (0, 0)
         pixel_i = 0
         x_i = 0
         for pixel in self.pixels.getData():
             if (pixel != 0 and not self.negative) or (pixel == 0 and self.negative):
-                self._drawPixel(module, pixel_i, pos)
+                self._drawPixel(footprint, pixel_i, pos)
             pixel_i = pixel_i + 1
             x_i = (x_i + 1) % self.size_repl[0]
             if x_i == 0:
@@ -200,7 +201,7 @@ class Replacement:
             if self.placeholder.reverse:
                 pos_adjust = _mult((-1, 1), pos_adjust)
             pos = _plus(pos, pos_adjust)
-        self.pcb.Add(module)
+        self.pcb.Add(footprint)
 
     def _drawCaption(self):
         # used many times...
@@ -210,23 +211,23 @@ class Replacement:
 
         #int((5 + half_number_of_elements) * self.size_pixel[0]))
         text_pos = int((self.text_height) + ((1 + half_width) * self.size_pixel[0]))
-        module = self.module
+        footprint = self.footprint
 
-        module.Value().SetTextHeight(self.text_height)
-        module.Value().SetTextWidth(self.text_width)
-        module.Value().SetThickness(self.text_thickness)
-        module.Reference().SetTextHeight(self.text_height)
-        module.Reference().SetTextWidth(self.text_width)
-        module.Reference().SetThickness(self.text_thickness)
+        footprint.Value().SetTextHeight(self.text_height)
+        footprint.Value().SetTextWidth(self.text_width)
+        footprint.Value().SetThickness(self.text_thickness)
+        footprint.Reference().SetTextHeight(self.text_height)
+        footprint.Reference().SetTextWidth(self.text_width)
+        footprint.Reference().SetThickness(self.text_thickness)
         if self.reverse:
-            module.Value().Flip(pcbnew.wxPoint(0, 0))
-            module.Reference().Flip(pcbnew.wxPoint(0, 0))
+            footprint.Value().Flip(pcbnew.wxPoint(0, 0))
+            footprint.Reference().Flip(pcbnew.wxPoint(0, 0))
             text_layer = pcbnew.B_SilkS
         else:
             text_layer = pcbnew.F_SilkS
-        module.Value().SetPosition(pcbnew.wxPoint(0, - text_pos))
-        module.Reference().SetPosition(pcbnew.wxPoint(0, text_pos))
-        module.Value().SetLayer(text_layer)
+        footprint.Value().SetPosition(pcbnew.wxPoint(0, - text_pos))
+        footprint.Reference().SetPosition(pcbnew.wxPoint(0, text_pos))
+        footprint.Value().SetLayer(text_layer)
 
 def extractCorners(obj, polySet):
     x_s = set()
@@ -256,7 +257,7 @@ def scanForPlaceholders(pcb):
             placeholders.append(placeholder)
 
     for drawing in pcb.GetDrawings():
-        if drawing.GetClass() == "DRAWSEGMENT" and drawing.GetShape() == pcbnew.S_POLYGON and drawing.GetPointCount() == 4 and drawing.GetPolyShape().OutlineCount() == 1 and drawing.GetPolyShape().HoleCount(0) == 0:
+        if drawing.GetClass() == "PCB_SHAPE" and drawing.GetShape() == pcbnew.S_POLYGON and drawing.GetPointCount() == 4 and drawing.GetPolyShape().OutlineCount() == 1 and drawing.GetPolyShape().HoleCount(0) == 0:
             poly_shape = drawing.GetPolyShape()
             try:
                 (top_left, bottom_right) = extractCorners(drawing, poly_shape)
